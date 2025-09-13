@@ -11,6 +11,17 @@
     font-family: Arial, sans-serif;
     text-align: center;
  }
+ 
+ #div-container {
+    position: relative; /* can also use fixed if you want it to stick at bottom */
+    margin-top: 50px;   /* space from content above */
+    display: flex;
+    flex-wrap: wrap;     /* wrap if many buttons */
+    gap: 10px;           /* spacing between buttons */
+  }
+  
+  
+ 
  .button {
     display: inline-block;
     margin: 10px;
@@ -36,17 +47,18 @@
 
 <h1>Supreme Math Lite</h1>
 <div id="button-count">Educational Content: 0</div>
-<p id="wait">Please wait...</p>
+<p id="wait">Click it</p>
 <div id="options">
     <button id="start-btn" class="button">Start</button>
 </div>
+<div id="button-container"></div>
 
 <script>
 const optionsDiv = document.getElementById("options");
 const countDiv = document.getElementById("button-count");
 const startBtn = document.getElementById("start-btn");
 const wait = document.getElementById("wait");
-wait.style.display = "none";
+const divcontainer = document.getElementById('button-container');
 
 
 const zipUrls = [
@@ -60,71 +72,73 @@ const zipUrls = [
     "https://canvas.instructure.com/files/311601733/download?download_frd=1&verifier=A1FdmNOWmLr02KKvowg1Sbm9anm2i68fffkqcvJH",
 ];
 
-async function loadZips() {
+let allHtmlFiles = [];
+
+function initZipButtons() {
     startBtn.remove();
-    wait.style.display = "block";
+    zipUrls.forEach((url, idx) => {
+        const zipBtn = document.createElement("button");
+        zipBtn.textContent = `Load ZIP ${idx + 1}`;
+        zipBtn.className = "zip-button";
+        zipBtn.onclick = () => loadZip(url, idx + 1, zipBtn);
+        optionsDiv.appendChild(zipBtn);
+    });
+}
 
+async function loadZip(url, index, buttonEl) {
+    buttonEl.remove();
+    
+    wait.textContent = `Fetching ZIP ${index}...`;
     try {
-        const allHtmlFiles = [];
-        var numm = 1
-        // load them zips
-        for (const url of zipUrls) {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch ZIP file: " + url);
-            
-            const blob = await response.blob();
-            const zip = await JSZip.loadAsync(blob);
-
-            const htmlFiles = Object.keys(zip.files)
-                .filter(name => {
-                    const lower = name.toLowerCase();
-                    return lower.endsWith(".html") || lower.endsWith(".htm");
-                })
-                .map(name => ({ zip, name }));
-
-            allHtmlFiles.push(...htmlFiles);
-            wait.textContent = "Please wait...("+ numm + " / " + zipUrls.length + ")"
-            numm++
-        }
-        wait.remove()
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Failed to fetch ZIP file " + url);
+        const blob = await response.blob();
+        const zip = await JSZip.loadAsync(blob);
+        const htmlFiles = Object.keys(zip.files)
+            .filter(name => {
+                const lower = name.toLowerCase();
+                return lower.endsWith(".html") || lower.endsWith(".htm");
+            })
+            .map(name => ({ zip, name }));
+        allHtmlFiles.push(...htmlFiles);
         
         allHtmlFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-
-        optionsDiv.innerHTML = "";
-
-        allHtmlFiles.forEach(file => {
-            const btn = document.createElement("button");
-            btn.textContent = file.name.split("/").pop();
-            btn.className = "button";
-            btn.onclick = () => openHtml(file.zip, file.name);
-            optionsDiv.appendChild(btn);
-        });
-
-        countDiv.textContent = `Educational Content: ${allHtmlFiles.length}`;
-        wait.style.display = "none";
-
+        renderHtmlButtons();
+        wait.textContent = 'Done.'
     } catch (err) {
-        console.error("Error loading ZIPs:", err);
-        alert("Error loading ZIP files.");
+        console.error(err);
+        alert("Error loading ZIP " + index);
+        wait.textContent = 'Error.'
     }
+}
+
+function renderHtmlButtons() {
+    document.querySelectorAll(".html-button").forEach(btn => btn.remove());
+    allHtmlFiles.forEach(file => {
+        const btn = document.createElement("button");
+        btn.textContent = file.name.split("/").pop();
+        btn.className = "button html-button";
+        divcontainer.appendChild(btn);
+
+        btn.onclick = () => openHtml(file.zip, file.name);
+        //optionsDiv.appendChild(btn);
+    });
+    countDiv.textContent = `Educational Content: ${allHtmlFiles.length}`;
 }
 
 async function openHtml(zip, fileName) {
     const elements = document.body.getElementsByTagName('*');
     for (let i = 0; i < elements.length; i++) elements[i].style.display = 'none';
-
     const iframe = document.createElement("iframe");
     iframe.style.width = "100%";
     iframe.style.height = "100vh";
     iframe.style.border = "none";
     document.body.appendChild(iframe);
-
     const content = await zip.files[fileName].async("string");
     const doc = iframe.contentWindow.document;
     doc.open();
     doc.write(content);
     doc.close();
-
     const backButton = document.createElement("button");
     backButton.textContent = "B";
     backButton.style.position = "absolute";
@@ -135,7 +149,6 @@ async function openHtml(zip, fileName) {
     backButton.style.width = "auto";
     backButton.style.padding = "0.5em 1em";
     document.body.appendChild(backButton);
-
     const fullscreenButton = document.createElement("button");
     fullscreenButton.textContent = "F";
     fullscreenButton.style.position = "absolute";
@@ -146,9 +159,7 @@ async function openHtml(zip, fileName) {
     fullscreenButton.style.width = "auto";
     fullscreenButton.style.padding = "0.5em 1em";
     document.body.appendChild(fullscreenButton);
-
     fullscreenButton.onclick = () => doc.body.requestFullscreen();
-
     backButton.onclick = () => {
         iframe.remove();
         backButton.remove();
@@ -157,7 +168,9 @@ async function openHtml(zip, fileName) {
     };
 }
 
-startBtn.addEventListener("click", loadZips);
+startBtn.addEventListener("click", initZipButtons);
 </script>
+
+
 </body>
 </html>
