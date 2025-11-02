@@ -114,7 +114,7 @@ function renderHtmlButtons() {
     document.querySelectorAll(".html-button").forEach(btn => btn.remove());
     allHtmlFiles.forEach(file => {
         const btn = document.createElement("button");
-        btn.textContent = file.name.split("/").pop();
+        btn.textContent = file.name.split("/").pop().split(".htm")[0]
         btn.className = "button html-button";
         divcontainer.appendChild(btn);
 
