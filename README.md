@@ -1,6 +1,6 @@
 # A collection of offline single-file games.
 
-A repo filled with more than a hundred offline games that can each run on a single file. This is a good option if you are having internet connectivity issues, or you're at some place with restricted internet.
+A repo filled with 200 offline games that can each run on a single file. This is a good option if you are having internet connectivity issues, or you're at some place with restricted internet.
 
 
 No CDNs nor external frames, each game asset is inlined in the html file.
