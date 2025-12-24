@@ -163,11 +163,7 @@ Element.prototype.setAttribute = function (name, value) {
     
 
     function extractPath(url) {
-        try {
-            return new URL(url, location.href).pathname
-        } catch {
-            return url
-        }
+        return url;
     }
 
 
